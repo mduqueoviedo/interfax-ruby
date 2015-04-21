@@ -30,7 +30,7 @@ describe "Interfax" do
       interfax.client.should be_kind_of(Savon::Client)
     end
     it "should have correct document" do
-      interfax.client.wsdl.document.should == "https://ws.interfax.net/dfs.asmx?WSDL"
+      interfax.client.globals[:wsdl].should == "https://ws.interfax.net/dfs.asmx?WSDL"
     end
   end
   describe "#start_file_upload" do

@@ -8,15 +8,15 @@ class Interfax
     @password = options[:password] || ENV['INTERFAX_PASSWORD']
     @raw_response = {}
     @bytes_uploaded = 0
-    Gyoku.convert_symbols_to(:camelcase)
+    #Gyoku.convert_symbols_to(:camelcase)
   end
 
   def client
-    @client ||= ::Savon::Client.new(WSDL_URL)
+    @client ||= Savon.client(wsdl: WSDL_URL)
   end
 
   def start_file_upload
-    @last_session_id = request :start_file_upload do |response|
+    @last_session_id = req :start_file_upload do |response|
       response[:session_id]
     end
   end
@@ -27,7 +27,7 @@ class Interfax
     @file_path = file_path
 
     each_chunk(chunk_size) do |chunk, is_last|
-      request :upload_file_chunk, {
+      req :upload_file_chunk, {
         :chunk => Base64.encode64(chunk),
         :SessionID => session_id,
         :IsLast => is_last ? 1 : 0
@@ -41,7 +41,7 @@ class Interfax
   def cancel_file_upload(options = {})
     session_id = options.delete(:session_id) || @last_session_id
     return if session_id.nil?
-    request :cancel_file_upload, :session_id => session_id
+    req :cancel_file_upload, :session_id => session_id
   end
 
   def sendfax_ex_2(options = {})
@@ -59,11 +59,13 @@ class Interfax
     options = default_options.merge(options)
     options[:is_high_resolution] = options[:is_high_resolution] ? 1 : 0 unless options[:is_high_resolution].is_a? Integer
     options[:is_fine_rendering] = options[:is_fine_rendering] ? 1 : 0 unless options[:is_fine_rendering].is_a? Integer
-    request :sendfax_ex_2, options
+    req :sendfax_ex_2, options
   end
 
+
   private
-  def request(method_name, options = {}, &block)
+
+  def req(method_name, options = {}, &block)
     raw_response = client.request :int, method_name, {:body => {:username => @username, :password => @password}.merge(options)}
     return false unless raw_response.success?
     result = raw_response.to_hash["#{method_name}_response".to_sym]["#{method_name}_result".to_sym].to_i
